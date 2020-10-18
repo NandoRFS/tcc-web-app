@@ -1,0 +1,8 @@
+.body {
+    height: auto;
+}
+
+#map {
+    width: 100%;
+    height: 360px;
+}
