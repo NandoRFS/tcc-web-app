@@ -6,9 +6,11 @@ import Notification from '../utils/notification'
 
 import Main from '../template/Main'
 
+import TipService from '../../services/tip'
+
 const initialState = {
     openForm: false,
-    id: 0 ,
+    id: undefined,
     tip: {
         title: '',
         description: ''
@@ -26,21 +28,30 @@ class Tip extends Component {
 
     constructor(props) {
         super(props)
+        this.tipService = new TipService()
     }
 
     componentDidMount() {
         // this.setState({tips: [{title: 'new valuse', description: 'VALUE', id: this.state.id++}]})
+        this.updateList()
         this.setState({openForm: false})
     }
 
     save() {
-        const tips = this.state.tips
 
         if(!this.validateForm()) {
             notification.error()
         } else {
-            tips.push({title: this.state.tip?.title, description: this.state.tip?.description})
-            this.setState({tips})
+            const tip = {title: this.state.tip?.title, description: this.state.tip?.description}
+
+            if(!this.state.id) {
+                this.tipService.save({...tip})
+            } else {
+                this.tipService.update({...tip}, this.state.id)
+            }
+
+            
+            this.updateList()
             notification.success()
             this.cleanFields()
             this.openForm()
@@ -48,9 +59,31 @@ class Tip extends Component {
         
     }
 
+    update(tip) {
+        this.setState({id: tip._id})
+        this.setState({tip})
+        this.openForm()
+    }
+
+    delete(id) {
+        this.tipService.delete(id)
+        .then(() => {
+            this.updateList()
+            notification.success()
+        })
+        .catch(()=> {
+            notification.error()
+        })
+    }
+
     openForm() {
         this.setState({openForm: !this.state.openForm})
         console.log(this.state.openForm)
+    }
+
+    updateList() {
+        this.tipService.getAll()
+        .then(resp => this.setState({tips: [...resp.tip]}))
     }
 
     updateField(event) {
@@ -60,8 +93,8 @@ class Tip extends Component {
     }
 
     cleanFields() {
-        const {tip} = initialState
-        this.setState({tip})
+        const {tip, id} = initialState
+        this.setState({tip, id})
     }
 
     validateForm() {
@@ -167,18 +200,17 @@ class Tip extends Component {
     }
 
     renderRows() {
-        console.log(`RENDERIZA TABELA SAFADA`, this.state.tips)
         return this.state.tips.map(tip => {
         //     let color = address.mainAddress ? {'backgroundColor': '#e2c4f2'} : {}
             return (
-                <tr key={'tip.id'}>
+                <tr >
                     <td>{tip.title}</td>
-                    <td>{tip.description}</td>
+                    <td className='big-string' title={`${tip.description}`}>{tip.description}</td>
                     <td>
-                        <button title={'Ver/Editar Cliente'} className={'btn btn-success ml-2'} >
+                        <button title={'Ver/Editar Cliente'} className={'btn btn-success ml-2'} onClick={() => this.update(tip)}>
                             <i className={'fa fa-pencil'}></i>
                         </button>
-                        <button className={'btn btn-danger ml-2'} onClick={() => this.removeAddress()}>
+                        <button className={'btn btn-danger ml-2'} onClick={() => this.delete(tip._id)}>
                             <i className={'fa fa-trash'}></i>
                         </button>
                         

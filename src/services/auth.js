@@ -1,9 +1,12 @@
-export const TOKEN_KEY = "@airbnb-Token";
-export const isAuthenticated = () => localStorage.getItem(TOKEN_KEY) !== null;
-export const getToken = () => localStorage.getItem(TOKEN_KEY);
-export const login = token => {
-  localStorage.setItem(TOKEN_KEY, token);
-};
-export const logout = () => {
-  localStorage.removeItem(TOKEN_KEY);
-};
+import Axios from './axios'
+
+export default class Auth {
+  constructor() {
+    this.axios = new Axios('/authenticate')
+  }
+
+  async authenticate(body) {
+    return this.axios.post(body)
+  }
+
+}

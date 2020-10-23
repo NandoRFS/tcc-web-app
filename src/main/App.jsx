@@ -11,13 +11,13 @@ import Nav from '../components/template/Nav'
 import Routes from './Routes'
 import Footer from '../components/template/Footer'
 
+import {isAuthenticated} from '../components/login/Logincontroller'
+
 export default props => {
     //Função para validar o tempo de expiração do token
     //para só então estar logado
-    const auth = localStorage.getItem('token')
-    console.log("passa aqui tambem por favor", !!auth)
     
-    if(!auth)
+    if(!isAuthenticated()) {
         return (
             <HashRouter>
                 <div className={"app"}>
@@ -26,7 +26,7 @@ export default props => {
                 </div>
             </HashRouter>
         )
-
+    }
     return (
         <HashRouter>
             <div className={"app"}>

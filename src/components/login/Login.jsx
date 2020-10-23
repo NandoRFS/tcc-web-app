@@ -5,6 +5,8 @@ import Notification from '../utils/notification'
 
 import Main from '../template/Main'
 
+import Auth from '../../services/auth'
+
 const initialState = {
     openForm: false,
     id: 0 ,
@@ -25,19 +27,32 @@ class Tip extends Component {
 
     constructor(props) {
         super(props)
+        this.authService = new Auth()
     }
 
     componentDidMount() {
         // this.setState({tips: [{title: 'new valuse', description: 'VALUE', id: this.state.id++}]})
         this.setState({openForm: false})
     }
+    
+    updateField(event) {
+        const user = {...this.state.user}
+        user[event.target.name] = event.target.value
+        this.setState({user})
+    }
 
     login() {
         //Fazer login /authenticate e setar o token
         //de response para usar como header no axiosService.js
         //para rotas que precisam estar autenticadas
-        localStorage.setItem('token','blablablahihihi')
-        window.location.reload()
+        this.authService.authenticate(this.state.user)
+            .then(resp => {
+                console.log('resp: ', resp)
+                localStorage.setItem('token', resp.token)
+                window.location.reload()
+            })
+            .catch(e => console.log(e))
+        // window.location.reload()
     }
 
     render() {

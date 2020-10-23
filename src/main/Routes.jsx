@@ -7,13 +7,14 @@ import Tip from "../components/tips/Tip";
 import Medicine from "../components/medicines/Medicine";
 import Login from "../components/login/Login"
 
+import {isAuthenticated} from '../components/login/Logincontroller'
+
 export default props => {
     //Função para validar o tempo de expiração do token
     //para só então estar logado
     //se espirar o tempo remover do localstorage
-    const auth = localStorage.getItem('token')
-    console.log("passa aqui por favor", auth)
-    if(!auth)
+
+    if(!isAuthenticated())
         return (
             <Switch>
                 <Route exact path={'/'} component={Login} />
