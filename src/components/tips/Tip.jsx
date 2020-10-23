@@ -2,29 +2,50 @@ import 'ol/ol.css'
 import './Tip.css'
 import React, { Component } from "react"
 import {Button, TextField, Divider} from '@material-ui/core'
+import Notification from '../utils/notification'
 
 import Main from '../template/Main'
 
+const initialState = {
+    openForm: false,
+    id: 0 ,
+    tip: {
+        title: '',
+        description: ''
+    },
+    tips: []
+}
+
+const notification = new Notification()
+
+const baseUrl = process.env.REACT_APP_APIURL
+
 class Tip extends Component {
+    
+    state = {...initialState}
+
     constructor(props) {
         super(props)
-
-        this.state = { 
-            openForm: false, 
-            zoom: 14 ,
-            user: {
-                name: '',
-                email: '',
-                cpf: '',
-                phone: '',
-                addresses: []
-            }
-        }
     }
+
     componentDidMount() {
-
+        // this.setState({tips: [{title: 'new valuse', description: 'VALUE', id: this.state.id++}]})
         this.setState({openForm: false})
+    }
 
+    save() {
+        const tips = this.state.tips
+
+        if(!this.validateForm()) {
+            notification.error()
+        } else {
+            tips.push({title: this.state.tip?.title, description: this.state.tip?.description})
+            this.setState({tips})
+            notification.success()
+            this.cleanFields()
+            this.openForm()
+        }
+        
     }
 
     openForm() {
@@ -33,9 +54,28 @@ class Tip extends Component {
     }
 
     updateField(event) {
-        const user = {...this.state.user}
-        user[event.target.name] = event.target.value
-        this.setState({user})
+        const tip = {...this.state.tip}
+        tip[event.target.name] = event.target.value
+        this.setState({tip})
+    }
+
+    cleanFields() {
+        const {tip} = initialState
+        this.setState({tip})
+    }
+
+    validateForm() {
+        const {title, description} = this.state.tip
+
+        if(!title.replace(/\s/g, '').length || !description.replace(/\s/g, '').length)
+            return false
+
+        return true
+    }
+
+    closeForm() {
+        this.cleanFields()
+        this.openForm()
     }
 
     renderHeader() {
@@ -59,12 +99,14 @@ class Tip extends Component {
                                 <div className={'row'}>
                                     <div className={'col-12'}>
                                         <div className={'form-group'}>
-                                            <TextField className='col-12' id="standard-basic" label="Título" />
-                                            {/* <label>Nome</label>
-                                            <input type={'text'} className={'form-control'} name={'name'}
-                                                value={this.state.user?.name}
+                                            <TextField 
+                                                className='col-12' 
+                                                id="standard-basic"
+                                                label="Título"
+                                                name={'title'}
+                                                value={this.state.tip.title} 
                                                 onChange={e => this.updateField(e)}
-                                                placeholder={'Digite o nome...'} /> */}
+                                                placeholder={'Digite o título...'}/>
                                         </div>
                                     </div>
                                 </div>
@@ -76,7 +118,11 @@ class Tip extends Component {
                                             id="standard-multiline-static"
                                             label="Descrição"
                                             multiline
-                                            //   defaultValue="Default Value"
+                                            label="Descrição"
+                                            name={'description'}
+                                            value={this.state.tip.description} 
+                                            onChange={e => this.updateField(e)}
+                                            placeholder={'Digite a descrição...'}
                                         />
                                         </div>
                                     </div>
@@ -85,11 +131,11 @@ class Tip extends Component {
                         
                             <div className={"d-flex justify-content-end"}> 
                                 <button className={'btn btn-primary'}
-                                    onClick={e => this.openForm()}>
+                                    onClick={e => this.save()}>
                                     Salvar
                                 </button>
                                 <button className={'btn btn-secondary ml-2'}
-                                    onClick={e => this.openForm()}>
+                                    onClick={e => this.closeForm()}>
                                     Cancelar
                                 </button>
                             </div>
@@ -121,20 +167,25 @@ class Tip extends Component {
     }
 
     renderRows() {
-        // return this.state.addresses.map(address => {
+        console.log(`RENDERIZA TABELA SAFADA`, this.state.tips)
+        return this.state.tips.map(tip => {
         //     let color = address.mainAddress ? {'backgroundColor': '#e2c4f2'} : {}
             return (
-                <tr key={'address.id'}>
-                    <td>A</td>
-                    <td>A</td>
+                <tr key={'tip.id'}>
+                    <td>{tip.title}</td>
+                    <td>{tip.description}</td>
                     <td>
+                        <button title={'Ver/Editar Cliente'} className={'btn btn-success ml-2'} >
+                            <i className={'fa fa-pencil'}></i>
+                        </button>
                         <button className={'btn btn-danger ml-2'} onClick={() => this.removeAddress()}>
                             <i className={'fa fa-trash'}></i>
                         </button>
+                        
                     </td>
                 </tr>
             )
-        // })
+        })
     }
 
     render() {

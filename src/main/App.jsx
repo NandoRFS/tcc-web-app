@@ -11,14 +11,31 @@ import Nav from '../components/template/Nav'
 import Routes from './Routes'
 import Footer from '../components/template/Footer'
 
-export default props =>
-    <HashRouter>
-        <div className={"app"}>
-            <ReactNotification />
-            <Logo />
-            <Nav />
-            <Routes />
-            <Footer />
-        </div>
-    </HashRouter>
+export default props => {
+    //Função para validar o tempo de expiração do token
+    //para só então estar logado
+    const auth = localStorage.getItem('token')
+    console.log("passa aqui tambem por favor", !!auth)
+    
+    if(!auth)
+        return (
+            <HashRouter>
+                <div className={"app"}>
+                    <ReactNotification />
+                    <Routes />
+                </div>
+            </HashRouter>
+        )
 
+    return (
+        <HashRouter>
+            <div className={"app"}>
+                <ReactNotification />
+                <Logo />
+                <Nav />
+                <Routes />
+                <Footer />
+            </div>
+        </HashRouter>
+    )
+}
