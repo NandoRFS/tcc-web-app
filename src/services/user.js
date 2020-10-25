@@ -1,11 +1,11 @@
 import Axios from './axios'
 
-export default class Tip {
+export default class User {
   constructor() {
-    this.axios = new Axios('/tip')
+    this.axios = new Axios('/register')
   }
 
-  async save(body) {
+  async register(body) {
     return this.axios.post(body)
   }
 

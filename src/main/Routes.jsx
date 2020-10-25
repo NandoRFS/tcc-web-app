@@ -6,6 +6,7 @@ import PatientCrud from '../components/patients/PatientCrud'
 import Tip from "../components/tips/Tip";
 import Medicine from "../components/medicines/Medicine";
 import Login from "../components/login/Login"
+import Pharmacist from "../components/pharmacist/Pharmacist"
 
 import {isAuthenticated} from '../components/login/Logincontroller'
 
@@ -25,6 +26,7 @@ export default props => {
     return (
         <Switch>
             <Route exact path={'/'} component={Home} />
+            <Route path={'/pharmacists'} component={Pharmacist} />
             <Route path={'/patients'} component={PatientCrud} />
             <Route path={'/medicines'} component={Medicine} />
             <Route path={'/users'} component={Medicine} />

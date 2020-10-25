@@ -1,6 +1,6 @@
 import Axios from './axios'
 
-export default class Auth {
+export default class Medicine {
   constructor() {
     this.axios = new Axios('/medication')
   }

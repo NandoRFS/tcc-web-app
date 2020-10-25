@@ -1,8 +1,8 @@
 import Axios from './axios'
 
-export default class Tip {
+export default class Pharmacist {
   constructor() {
-    this.axios = new Axios('/tip')
+    this.axios = new Axios('/pharmacist')
   }
 
   async save(body) {

@@ -1,5 +1,5 @@
 import 'ol/ol.css'
-import './Medicine.css'
+import './Pharmacist.css'
 import React, { Component } from "react"
 import {TextField} from '@material-ui/core'
 import Notification from '../utils/notification'
@@ -15,28 +15,21 @@ import TableRow from '@material-ui/core/TableRow';
 
 import Main from '../template/Main'
 
-import MedicineService from '../../services/medicine'
+import PharmacistService from '../../services/pharmacist'
+import UserService from '../../services/user'
 
 const columns = [
     { 
-        id: 'name', 
-        label: 'Medicamento' 
+        id: 'user.cpf', 
+        label: 'CPF' 
     },
     { 
-        id: 'company', 
-        label: 'Empresa' 
+        id: 'user.name', 
+        label: 'Nome' 
     },
     { 
-        id: 'amount', 
-        label: 'Quantidade' 
-    },
-    { 
-        id: 'patient_leaflet', 
-        label: 'Bula do Paciente' 
-    },
-    { 
-        id: 'professional_leaflet', 
-        label: 'Bula do Médico' 
+        id: 'position', 
+        label: 'Cargo/Função' 
     },
     {
         id: 'actions',
@@ -48,30 +41,37 @@ const columns = [
 const initialState = {
     openForm: false,
     id: undefined,
-    medicine: {
-        name: "",
-        company: "",
-        amount: "",
-        patient_leaflet: "",
-        professional_leaflet: ""
+    user: {
+        name: '',
+        email: '',
+        cpf: '',
+        password: ''
     },
-    medicines: [],
-    filteredTips: [],
+    pharmacist: {
+        user: '',
+        ctps: '',
+        position: '',
+        birth: ''
+    },
+    pharmacists: [],
+    filteredPharmacist: [],
     page: 0,
     search: '',
-    rowsPerPage: 10
+    rowsPerPage: 10,
+    disableUser: false
 }
 
 const notification = new Notification()
 
 
-class Medicine extends Component {
+class Pharmacist extends Component {
     
     state = {...initialState}
 
     constructor(props) {
         super(props)
-        this.medicineService = new MedicineService()
+        this.pharmacistService = new PharmacistService()
+        this.userService = new UserService()
     }
 
     componentDidMount() {
@@ -87,19 +87,24 @@ class Medicine extends Component {
       this.setState({rowsPerPage: +event.target.value});
     };
 
-    save() {
+    async save() {
 
-        if(!this.validateForm()) {
+        if(!this.validateForm(!!this.state.id)) {
             notification.error()
         } else {
-            const medicine = {...this.state.medicine}
+            let pharmacist = {...this.state.pharmacist}
+            const user = {...this.state.user}
 
             if(!this.state.id) {
-                this.medicineService.save({...medicine})
+                let resp = await this.userService.register({...user})
+                pharmacist.user = resp.user?._id
+                await this.pharmacistService.save({...pharmacist})
+
             } else {
-                this.medicineService.update({...medicine}, this.state.id)
+                pharmacist.user = pharmacist.user?._id
+                await this.pharmacistService.update({...pharmacist}, this.state.id)
+                this.setState({disableUser: false})
             }
-            
             this.updateList()
             notification.success()
             this.cleanFields()
@@ -108,14 +113,16 @@ class Medicine extends Component {
         
     }
 
-    update(medicine) {
-        this.setState({id: medicine._id})
-        this.setState({medicine})
+    update(pharmacist) {
+        this.setState({id: pharmacist._id})
+        this.setState({pharmacist})
+        this.setState({user: pharmacist.user})
+        this.setState({disableUser: true})
         this.openForm()
     }
 
     delete(id) {
-        this.medicineService.delete(id)
+        this.pharmacistService.delete(id)
         .then(() => {
             this.updateList()
             notification.successDelete()
@@ -128,43 +135,57 @@ class Medicine extends Component {
 
     openForm() {
         this.setState({openForm: !this.state.openForm})
-        console.log(this.state.openForm)
     }
 
     updateList() {
-        this.medicineService.getAll()
-        .then(resp => this.setState({medicines: [...resp.medication]}))
+        this.pharmacistService.getAll()
+        .then(resp => {
+            this.setState({pharmacists: [...resp.pharmacist]})
+        })
     }
 
     updateField(event) {
-        const medicine = {...this.state.medicine}
-        medicine[event.target.name] = event.target.value
-        this.setState({medicine})
+        const pharmacist = {...this.state.pharmacist}
+        pharmacist[event.target.name] = event.target.value
+        this.setState({pharmacist})
+    }
+
+    updateUserField(event) {
+        const user = {...this.state.user}
+        user[event.target.name] = event.target.value
+        this.setState({user})
     }
 
     cleanFields() {
-        const {medicine, id} = initialState
-        this.setState({medicine, id})
+        const {pharmacist, id, user} = initialState
+        this.setState({pharmacist, id, user})
     }
 
-    validateForm() {
-        const {name, company, amount, patient_leaflet, professional_leaflet} = this.state.medicine
+    validateForm(update) {
+        const {ctps, position, birth} = this.state.pharmacist
 
-        if(!name.replace(/\s/g, '').length || !company.replace(/\s/g, '').length
-        || !amount.replace(/\s/g, '').length || !patient_leaflet.replace(/\s/g, '').length
-        || !professional_leaflet.replace(/\s/g, '').length)
-            return false
+        if(!ctps.replace(/\s/g, '').length || !position.replace(/\s/g, '').length 
+        || !birth.replace(/\s/g, '').length)
+            return false    
 
+        if(!update) {
+            const {name, email, cpf, password} = this.state.user
+
+            if(!name.replace(/\s/g, '').length || !email.replace(/\s/g, '').length
+            || !cpf.replace(/\s/g, '').length || !password.replace(/\s/g, '').length)
+                return false 
+        }
+        
         return true
     }
 
     async search(field, element) {
-        console.log('aaaa', this.state.medicines.filter(x => x.name.toUpperCase().includes(element.toUpperCase())))
         this.setState({search: element})        
-        this.setState({filteredTips: [...this.state.medicines.filter(x => x.name.toUpperCase().includes(element.toUpperCase()))]})
+        this.setState({filteredTips: [...this.state.pharmacists.filter(x => x.user.name.toUpperCase().includes(element.toUpperCase()))]})
     }
 
     closeForm() {
+        this.setState({disableUser: false})
         this.cleanFields()
         this.openForm()
     }
@@ -174,7 +195,7 @@ class Medicine extends Component {
                 <div className={'body mb-3'}>
                 {
                         !this.state.openForm &&
-                    <div id="medicine" className={'row'}>
+                    <div id="pharmacist" className={'row'}>
                         <div className={'col-6 mt-2'}> 
                             <button className={'btn btn-primary'}
                                 onClick={e => this.openForm()}>
@@ -188,9 +209,9 @@ class Medicine extends Component {
                                     id="standard-basic"
                                     label="Pesquisar"
                                     name={'search'}
-                                    value={this.state.medicine.search} 
-                                    onChange={e => this.search('title',e.target.value)}
-                                    placeholder={'Digite o nome do medicamento...'}/>
+                                    value={this.state.pharmacist.search} 
+                                    onChange={e => this.search('name',e.target.value)}
+                                    placeholder={'Digite o nome do usuário...'}/>
                             </div>
                         </div>
                     </div>
@@ -208,17 +229,19 @@ class Medicine extends Component {
                                                 id="standard-basic"
                                                 label="Nome"
                                                 name={'name'}
-                                                value={this.state.medicine.name} 
-                                                onChange={e => this.updateField(e)}
+                                                disabled={this.state.disableUser}
+                                                value={this.state.user.name} 
+                                                onChange={e => this.updateUserField(e)}
                                                 placeholder={'Digite o nome...'}/>
                                             <TextField 
                                                 className='col-6 ml-2' 
                                                 id="standard-basic"
-                                                label="Empresa"
-                                                name={'company'}
-                                                value={this.state.medicine.company} 
-                                                onChange={e => this.updateField(e)}
-                                                placeholder={'Digite o nome...'}/>
+                                                label="Email"
+                                                name={'email'}
+                                                disabled={this.state.disableUser}
+                                                value={this.state.user.email} 
+                                                onChange={e => this.updateUserField(e)}
+                                                placeholder={'Digite o email...'}/>
                                         </div>
                                     </div>
                                 </div>
@@ -228,27 +251,58 @@ class Medicine extends Component {
                                             <TextField 
                                                 className='col-6' 
                                                 id="standard-basic"
-                                                label="Quantidade"
-                                                name={'amount'}
-                                                value={this.state.medicine.amount} 
+                                                label="Data de Nascimento"
+                                                name={'birth'}
+                                                value={this.state.pharmacist.birth} 
                                                 onChange={e => this.updateField(e)}
-                                                placeholder={'Digite o quantidade...'}/>
+                                                placeholder={'Digite a data de nascimento...'}/>
                                             <TextField 
-                                                className='col-3 ml-2' 
+                                                className='col-6 ml-2' 
                                                 id="standard-basic"
-                                                label="Bula do Paciente"
-                                                name={'patient_leaflet'}
-                                                value={this.state.medicine.patient_leaflet} 
-                                                onChange={e => this.updateField(e)}
-                                                placeholder={'Digite o link...'}/>
+                                                label="CPF"
+                                                name={'cpf'}
+                                                disabled={this.state.disableUser}
+                                                value={this.state.user.cpf} 
+                                                onChange={e => this.updateUserField(e)}
+                                                placeholder={'Digite o CPF...'}/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className={'row'}>
+                                    <div className={'col-12'}>
+                                        <div className={'form-group d-flex justify-content-center'}>
                                             <TextField 
-                                                className='col-3 ml-2' 
+                                                className='col-6' 
                                                 id="standard-basic"
-                                                label="Bula Profissional"
-                                                name={'professional_leaflet'}
-                                                value={this.state.medicine.professional_leaflet} 
+                                                label="CTPS"
+                                                name={'ctps'}
+                                                value={this.state.pharmacist.ctps} 
                                                 onChange={e => this.updateField(e)}
-                                                placeholder={'Digite o link...'}/>
+                                                placeholder={'Digite o CTPS...'}/>
+                                            <TextField 
+                                                className='col-6 ml-2' 
+                                                id="standard-basic"
+                                                label="Cargo/Função"
+                                                name={'position'}
+                                                value={this.state.pharmacist.position} 
+                                                onChange={e => this.updateField(e)}
+                                                placeholder={'Digite o cargo ou função...'}/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className={'row'}>
+                                    <div className={'col-12'}>
+                                        <div className={'form-group d-flex justify-content-right'}>
+                                            <TextField 
+                                                className='col-6' 
+                                                id="standard-basic"
+                                                label="Senha"
+                                                type="password"
+                                                name={'password'}
+                                                disabled={this.state.disableUser}
+                                                value={this.state.user.password} 
+                                                onChange={e => this.updateUserField(e)}
+                                                placeholder={'Digite a senha...'}/>
                                         </div>
                                     </div>
                                 </div>
@@ -273,10 +327,9 @@ class Medicine extends Component {
     }
 
     render() {
-        console.log(this.state.search !== '')
-        let array = (this.state.filteredTips.length === 0) && (this.state.search === '')? this.state.medicines : this.state.filteredTips
+        let array = (this.state.filteredPharmacist.length === 0) && (this.state.search === '')? this.state.pharmacists : this.state.filteredTips
         return (
-            <Main icon={"medkit"} title={"Medicamentos"} subtitle={"Gerenciamento de medicamentos"}>
+            <Main icon={"user-plus"} title={"Usuários"} subtitle={"Gerenciamento de usuários"}>
                 {this.renderHeader()}
                  <Paper >
                     <TableContainer >
@@ -298,7 +351,14 @@ class Medicine extends Component {
                             return (
                                 <TableRow hover role="checkbox" tabIndex={-1} key={row.code}>
                                 {columns.map((column) => {
-                                    const value = row[column.id];
+                                    let value = row[column.id];
+
+                                    if(column.id.includes('.')) {
+                                        const separate = column.id.split('.')
+                                        if(separate.length > 0)
+                                            value = row[separate[0]][separate[1]]
+                                    }
+
                                     return (
                                     <TableCell key={column.id} align={column.align} className={'big-string'} title={`${value}`}>
                                         {column.id === 'actions' ? 
@@ -323,7 +383,7 @@ class Medicine extends Component {
                     <TablePagination
                         rowsPerPageOptions={[10, 25, 50]}
                         component="div"
-                        count={this.state.medicines.length}
+                        count={this.state.pharmacists.length}
                         rowsPerPage={this.state.rowsPerPage}
                         page={this.state.page}
                         onChangePage={(e, v) => this.handleChangePage(e, v)}
@@ -335,4 +395,4 @@ class Medicine extends Component {
     }
 }
 
-export default Medicine
+export default Pharmacist
