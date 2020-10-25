@@ -65,7 +65,7 @@ export default class Axios {
             return resp.data
         } catch(e) {
             this.authError(e)
-            throw e
+            throw e.response.data
         }
     }
 

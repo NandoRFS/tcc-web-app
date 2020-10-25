@@ -68,4 +68,20 @@ export default class Notifications extends Component {
         })
     }
 
+    keyValueError(key, value) {
+        return store.addNotification({
+            title: "Erro!",
+            message: `${key} ${value} já existente, altere ou consulte já cadastrados`,
+            type: "danger",
+            insert: "top",
+            container: "top-right",
+            animationIn: ["animated", "fadeIn"],
+            animationOut: ["animated", "fadeOut"],
+            dismiss: {
+                duration: 4000,
+                onScreen: true
+            }
+        })
+    }
+
 }

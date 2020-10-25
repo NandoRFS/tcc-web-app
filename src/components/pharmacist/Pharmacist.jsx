@@ -88,27 +88,32 @@ class Pharmacist extends Component {
     };
 
     async save() {
-
-        if(!this.validateForm(!!this.state.id)) {
-            notification.error()
-        } else {
-            let pharmacist = {...this.state.pharmacist}
-            const user = {...this.state.user}
-
-            if(!this.state.id) {
-                let resp = await this.userService.register({...user})
-                pharmacist.user = resp.user?._id
-                await this.pharmacistService.save({...pharmacist})
-
+        try {
+            if(!this.validateForm(!!this.state.id)) {
+                notification.error()
             } else {
-                pharmacist.user = pharmacist.user?._id
-                await this.pharmacistService.update({...pharmacist}, this.state.id)
-                this.setState({disableUser: false})
+                let pharmacist = {...this.state.pharmacist}
+                const user = {...this.state.user}
+
+                if(!this.state.id) {
+                    let resp = await this.userService.register({...user})
+                    pharmacist.user = resp.user?._id
+                    await this.pharmacistService.save({...pharmacist})
+
+                } else {
+                    pharmacist.user = pharmacist.user?._id
+                    await this.pharmacistService.update({...pharmacist}, this.state.id)
+                    this.setState({disableUser: false})
+                }
+                this.updateList()
+                notification.success()
+                this.cleanFields()
+                this.openForm()
             }
-            this.updateList()
-            notification.success()
-            this.cleanFields()
-            this.openForm()
+        } catch(e) {
+            console.log('e', e)
+            if(e.error?.code == 11000)
+                notification.keyValueError(Object.keys(e.error.keyValue), Object.values(e.error.keyValue))
         }
         
     }
@@ -181,7 +186,7 @@ class Pharmacist extends Component {
 
     async search(field, element) {
         this.setState({search: element})        
-        this.setState({filteredTips: [...this.state.pharmacists.filter(x => x.user.name.toUpperCase().includes(element.toUpperCase()))]})
+        this.setState({filteredPharmacist: [...this.state.pharmacists.filter(x => x.user.name.toUpperCase().includes(element.toUpperCase()))]})
     }
 
     closeForm() {
@@ -327,7 +332,7 @@ class Pharmacist extends Component {
     }
 
     render() {
-        let array = (this.state.filteredPharmacist.length === 0) && (this.state.search === '')? this.state.pharmacists : this.state.filteredTips
+        let array = (this.state.filteredPharmacist.length === 0) && (this.state.search === '')? this.state.pharmacists : this.state.filteredPharmacist
         return (
             <Main icon={"user-plus"} title={"Usuários"} subtitle={"Gerenciamento de usuários"}>
                 {this.renderHeader()}
