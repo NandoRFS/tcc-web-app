@@ -17,6 +17,10 @@ export default class Pharmacist {
     return this.axios.get()
   }
 
+  async get(id) {
+    return this.axios.getById(id)
+  }
+
   async delete(id) {
     return this.axios.delete(id)
   }

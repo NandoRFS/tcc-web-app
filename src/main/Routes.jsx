@@ -3,6 +3,7 @@ import {Switch, Route, Redirect, BrowserRouter} from 'react-router'
 
 import Home from '../components/home/Home'
 import PatientCrud from '../components/patients/PatientCrud'
+import PatientMedicine from '../components/patientmedicines/PatientMedicine'
 import Tip from "../components/tips/Tip";
 import Medicine from "../components/medicines/Medicine";
 import Login from "../components/login/Login"
@@ -28,6 +29,7 @@ export default props => {
             <Route exact path={'/'} component={Home} />
             <Route path={'/pharmacists'} component={Pharmacist} />
             <Route path={'/patients'} component={PatientCrud} />
+            <Route path={'/patient-medicine'} component={PatientMedicine} />
             <Route path={'/medicines'} component={Medicine} />
             <Route path={'/users'} component={Medicine} />
             <Route path={'/tips'} component={Tip} />

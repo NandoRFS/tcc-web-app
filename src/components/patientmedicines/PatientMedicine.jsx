@@ -1,7 +1,6 @@
 import 'ol/ol.css'
 import './Patient.css'
 import React, { Component } from "react"
-
 import {TextField} from '@material-ui/core'
 import Notification from '../utils/notification'
 import axios from 'axios'
@@ -16,27 +15,26 @@ import TablePagination from '@material-ui/core/TablePagination';
 import TableRow from '@material-ui/core/TableRow';
 
 import Main from '../template/Main'
-import {Link} from "react-router-dom";
 
 import PatientService from '../../services/patient'
 import UserService from '../../services/user'
 
 const columns = [
     { 
-        id: 'user.cpf', 
-        label: 'CPF' 
+        id: 'medication_id.nome', 
+        label: 'Medicamento' 
     },
     { 
-        id: 'user.name', 
-        label: 'Nome' 
+        id: 'dosee', 
+        label: 'Dose' 
     },
     { 
         id: 'withdrawal_history.pick_date', 
-        label: 'Última Retirada'
+        label: 'Data da Retirada'
     },
     { 
-        id: 'statuslink', 
-        label: 'Estatísticas'
+        id: 'withdrawal_history.schedule_date', 
+        label: 'Próxima Retirada'
     },
     {
         id: 'actions',
@@ -69,33 +67,33 @@ const initialState = {
 		city: String,
 		state: String
 	},
-	medication: [
-		{
-			medication_id: '',
-			dose: String,
-			break_schedule: String, //intervalo intrajornada
-			instructions: String,
-			treatment: []
+	medications: [
+		// {
+		// 	medication_id: '',
+		// 	dose: String,
+		// 	break_schedule: String, //intervalo intrajornada
+		// 	instructions: String,
+		// 	treatment: []
 				// {
 				// 	main_date: Date, //data/hora que deveria tomar
 				// 	medicate_date: Date, //data/hora em que tomou
 				// 	medicated: Boolean
 				// }
 			
-		}
+		// }
 	],
 	withdrawal_history: [
-		{
-			medication: [
-				// {
-				// 	type: mongoose.Schema.Types.ObjectId,
-				// 	ref: 'Medication'
-				// } // medicamentos que retirou
-			],
-			schedule_date: Date, //data próxima retirada
-			pick_date: Date, //data em que retirou
-			late: Boolean //atrasado
-		}
+		// {
+		// 	medication: [
+		// 		// {
+		// 		// 	type: mongoose.Schema.Types.ObjectId,
+		// 		// 	ref: 'Medication'
+		// 		// } // medicamentos que retirou
+		// 	],
+		// 	schedule_date: Date, //data próxima retirada
+		// 	pick_date: Date, //data em que retirou
+		// 	late: Boolean //atrasado
+		// }
 	],
     patients: [],
     filteredPatient: [],
@@ -103,8 +101,7 @@ const initialState = {
     search: '',
     rowsPerPage: 10,
     disableUser: false,
-    statuslink: '',
-    openMedicine: false
+    statuslink: ''
 }
 
 const notification = new Notification()
@@ -120,7 +117,11 @@ class Patient extends Component {
         this.userService = new UserService()
     }
 
-    componentDidMount() {
+    componentDidMount() {       
+        // this.props.location.state
+        // Aqui retorna o paciente
+
+        console.log('teste', this.props.location.state)
         this.updateList()
         this.setState({openForm: false})
     }
@@ -132,11 +133,6 @@ class Patient extends Component {
     handleChangeRowsPerPage = (event) => {
       this.setState({rowsPerPage: +event.target.value});
     };
-
-    handleOpenMedicine() {
-        console.log('calling')
-        this.setState({openMedicine: !this.state.openMedicine})
-    }
 
     async save() {
         try {
@@ -198,9 +194,12 @@ class Patient extends Component {
     }
 
     updateList() {
-        this.patientService.getAll()
+        console.log('this.state', this.props.location.state)
+        this.patientService.get(this.props.location.state?.patient?._id)
         .then(resp => {
-            this.setState({patients: [...resp.patient]})
+            this.setState({patient: {...resp.patient}})
+            this.setState({medications: [...resp.patient?.medication]})
+            this.setState({withdrawal_history: [...resp.patient?.withdrawal_history]})
         })
     }
 
@@ -273,7 +272,6 @@ class Patient extends Component {
         this.openForm()
     }
 
-
     renderHeader() {
         return (
                 <div className={'body mb-3'}>
@@ -286,7 +284,7 @@ class Patient extends Component {
                                 Adicionar
                             </button>
                         </div>
-                        <div className={'col-6'}> 
+                        {/* <div className={'col-6'}> 
                             <div className={'form-group'}>
                                 <TextField 
                                     className='col-12' 
@@ -297,7 +295,7 @@ class Patient extends Component {
                                     onChange={e => this.search('name',e.target.value)}
                                     placeholder={'Digite o nome do usuário...'}/>
                             </div>
-                        </div>
+                        </div> */}
                     </div>
                 }
 
@@ -480,9 +478,10 @@ class Patient extends Component {
     }
 
     render() {
-        let array = (this.state.filteredPatient.length === 0) && (this.state.search === '')? this.state.patients : this.state.filteredPatient
-        return ( 
-            <Main icon={"users"} title={"Pacientes"} subtitle={"Gerenciamento de pacientes"}>
+        let array = (this.state.filteredPatient.length === 0) && (this.state.search === '')? this.state.medications : this.state.filteredPatient
+        console.log('ahn', this.state.patient)
+        return (
+            <Main icon={"users"} title={`Pacientes`} subtitle={`Medicações do paciente ${this.state.patient?.user?.name}`}>
                 {this.renderHeader()}
                  <Paper >
                     <TableContainer >
@@ -500,7 +499,7 @@ class Patient extends Component {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {array.slice(this.state.page * this.state.rowsPerPage, this.state.page * this.state.rowsPerPage + this.state.rowsPerPage).map((row) => {
+                            {this.state.medications.slice(this.state.page * this.state.rowsPerPage, this.state.page * this.state.rowsPerPage + this.state.rowsPerPage).map((row) => {
                             return (
                                 <TableRow hover role="checkbox" tabIndex={-1} key={row.code}>
                                 {columns.map((column) => {
@@ -531,17 +530,9 @@ class Patient extends Component {
                                             <button className={'btn btn-danger ml-2'} onClick={() => this.delete(row._id)}>
                                                 <i className={'fa fa-trash'}></i>
                                             </button>
-                                            <Link to={{
-                                                pathname: "/patient-medicine",
-                                                state: {
-                                                    patient: row
-                                                }
-                                                }}>
-                                                <button title={'Ver/Editar Medicamentos'} className={'btn btn-primary ml-2'} onClick={() => this.handleOpenMedicine()}>
-                                                    <i className={'fa fa-user-md'}></i>
-                                                </button>
-                                            </Link>
-                                            
+                                            <button title={'Ver/Editar Medicamentos'} className={'btn btn-primary ml-2'} >
+                                                <i className={'fa fa-user-md'}></i>
+                                            </button>
                                         </div>
                                         :  value}
                                     </TableCell>
