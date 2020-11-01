@@ -10,7 +10,6 @@ export default class Axios {
     }
 
     authError(e) {
-        console.log('AQUI', e)
         if(`${e}`.includes('401')) {
             localStorage.clear()
             window.location.reload()

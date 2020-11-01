@@ -31,7 +31,7 @@ const columns = [
         label: 'Nome' 
     },
     { 
-        id: 'withdrawal_history.pick_date', 
+        id: 'medication.pick_date', 
         label: 'Última Retirada'
     },
     { 
@@ -75,26 +75,10 @@ const initialState = {
 			dose: String,
 			break_schedule: String, //intervalo intrajornada
 			instructions: String,
-			treatment: []
-				// {
-				// 	main_date: Date, //data/hora que deveria tomar
-				// 	medicate_date: Date, //data/hora em que tomou
-				// 	medicated: Boolean
-				// }
-			
-		}
-	],
-	withdrawal_history: [
-		{
-			medication: [
-				// {
-				// 	type: mongoose.Schema.Types.ObjectId,
-				// 	ref: 'Medication'
-				// } // medicamentos que retirou
-			],
-			schedule_date: Date, //data próxima retirada
+            treatment: [],
+            schedule_date: Date, //data próxima retirada
 			pick_date: Date, //data em que retirou
-			late: Boolean //atrasado
+			history: []
 		}
 	],
     patients: [],
@@ -512,8 +496,10 @@ class Patient extends Component {
                                         if(separate.length > 0) {
                                             value = row[separate[0]][separate[1]]
                                             
-                                            if(separate[0] === 'withdrawal_history')    
-                                                value = 'N/D'
+                                            // row[separate[0]][0][separate[1]] ver aqui
+
+                                            if(separate[0] === 'medication')    
+                                                value =  'N/D'
                                         }
                                     }
 

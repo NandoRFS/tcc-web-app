@@ -273,7 +273,6 @@ class Medicine extends Component {
     }
 
     render() {
-        console.log(this.state.search !== '')
         let array = (this.state.filteredTips.length === 0) && (this.state.search === '')? this.state.medicines : this.state.filteredTips
         return (
             <Main icon={"medkit"} title={"Medicamentos"} subtitle={"Gerenciamento de medicamentos"}>

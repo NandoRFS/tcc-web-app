@@ -47,7 +47,7 @@ class Tip extends Component {
         //para rotas que precisam estar autenticadas
         this.authService.authenticate(this.state.user)
             .then(resp => {
-                console.log('resp: ', resp)
+                localStorage.setItem('user', JSON.stringify(resp.user))
                 localStorage.setItem('token', resp.token)
                 window.location.reload()
             })

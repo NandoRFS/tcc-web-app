@@ -5,6 +5,9 @@ import {TextField} from '@material-ui/core'
 import Notification from '../utils/notification'
 import axios from 'axios'
 
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
+
 import Paper from '@material-ui/core/Paper';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -18,6 +21,7 @@ import Main from '../template/Main'
 
 import PatientService from '../../services/patient'
 import UserService from '../../services/user'
+import MedicineService from '../../services/medicine'
 
 const columns = [
     { 
@@ -25,15 +29,15 @@ const columns = [
         label: 'Medicamento' 
     },
     { 
-        id: 'dosee', 
+        id: 'dose', 
         label: 'Dose' 
     },
     { 
-        id: 'withdrawal_history.pick_date', 
+        id: 'pick_date', 
         label: 'Data da Retirada'
     },
     { 
-        id: 'withdrawal_history.schedule_date', 
+        id: 'schedule_date', 
         label: 'Próxima Retirada'
     },
     {
@@ -57,7 +61,10 @@ const initialState = {
         birth: String,
         phone_number: String,
         age: Number,
-        weight: Number
+        weight: Number,
+        schedule_date: Date, //data próxima retirada
+        pick_date: Date, //data em que retirou
+        last_pick: Boolean
     },
 	address: {
 		zipcode: String,
@@ -66,42 +73,25 @@ const initialState = {
 		district: String,
 		city: String,
 		state: String
-	},
-	medications: [
-		// {
-		// 	medication_id: '',
-		// 	dose: String,
-		// 	break_schedule: String, //intervalo intrajornada
-		// 	instructions: String,
-		// 	treatment: []
-				// {
-				// 	main_date: Date, //data/hora que deveria tomar
-				// 	medicate_date: Date, //data/hora em que tomou
-				// 	medicated: Boolean
-				// }
-			
-		// }
-	],
-	withdrawal_history: [
-		// {
-		// 	medication: [
-		// 		// {
-		// 		// 	type: mongoose.Schema.Types.ObjectId,
-		// 		// 	ref: 'Medication'
-		// 		// } // medicamentos que retirou
-		// 	],
-		// 	schedule_date: Date, //data próxima retirada
-		// 	pick_date: Date, //data em que retirou
-		// 	late: Boolean //atrasado
-		// }
-	],
+    },
+    medication: {},
+	medications: [],
+    // {
+    //     schedule_date: Date, //data próxima retirada
+    //     pick_date: Date, //data em que retirou
+    //     late: Boolean //atrasado
+    // }
+    histories: [],
     patients: [],
-    filteredPatient: [],
+    filteredMedications: [],
     page: 0,
     search: '',
     rowsPerPage: 10,
     disableUser: false,
-    statuslink: ''
+    statuslink: '',
+    medicationId: '',
+    medicines: [], // Medicamentos gerais
+    editing: undefined
 }
 
 const notification = new Notification()
@@ -115,14 +105,16 @@ class Patient extends Component {
         super(props)
         this.patientService = new PatientService()
         this.userService = new UserService()
+        this.medicineService = new MedicineService()
     }
 
     componentDidMount() {       
-        // this.props.location.state
-        // Aqui retorna o paciente
-
-        console.log('teste', this.props.location.state)
+        if(!this.props.location.state?.patient?._id)
+            window.location.href = window.location.href.replace('patient-medicine', 'patients')
+        
         this.updateList()
+        this.medicineService.getAll()
+        .then(resp => this.setState({medicines: [...resp.medication]}))
         this.setState({openForm: false})
     }
 
@@ -135,30 +127,42 @@ class Patient extends Component {
     };
 
     async save() {
+        console.log('State: ', this.state.editing)
+
         try {
             if(!this.validateForm(!!this.state.id)) {
                 notification.error()
             } else {
-                let patient = {...this.state.patient}
-                const user = {...this.state.user}
-    
-                if(!this.state.id) {
-                    let resp = await this.userService.register({...user})
-                    patient.user = resp.user?._id
-                    patient.address = {...this.state.address}
-                    await this.patientService.save({...patient})
-    
+
+                if(this.state.editing !== undefined) {
+                    let aux = this.state.patient?.medication
+                    await this.setState({medication: {...this.state.medication, medication_id: this.state.medicationId}})
+                    aux.splice(this.state.editing, 1, this.state.medication)
+                    console.log('aaaaaa', aux)
+                    await this.setState({medications: [...aux]})                             
+                    this.setState({editing: undefined})
                 } else {
-                    await this.userService.update({...user}, patient.user?._id)
-                    patient.user = patient.user?._id
-                    await this.patientService.update({...patient}, this.state.id)
-                    this.setState({disableUser: false})
+                    await this.setState({medication: {...this.state.medication, medication_id: this.state.medicationId, last_pick: true}})
+                    await this.setState({medications: [...this.state.medications.map(m => {
+                        if(m.medication_id == this.state.medicationId)
+                            m.last_pick = false
+    
+                        return m
+                    }), this.state.medication]})
                 }
-                this.updateList()
-                notification.success()
-                this.cleanFields()
-                this.openForm()
-            }
+                
+                await this.setState({patient: {...this.state.patient, medication: [...this.state.medications]}})
+                                
+                await this.patientService.update({...this.state.patient}, this.state.patient?._id)
+                                
+                // this.setState({disableUser: false})
+            } 
+
+        this.updateList()
+        notification.success()
+        this.cleanFields()
+        this.openForm()
+            
         } catch(e) {
             console.log('e', e)
             if(e.error?.code == 11000)
@@ -167,40 +171,40 @@ class Patient extends Component {
         
     }
 
-    update(patient) {
-        console.log(patient)
-        this.setState({id: patient._id})
-        this.setState({patient})
-        this.setState({address: patient.address})
-        this.setState({user: patient.user})
-        this.setState({disableUser: true})
+    async update(medication, index) {
+        this.setState({medication: medication})
+        this.setState({medicationId: medication.medication_id})
+        this.setState({editing: index})
+
         this.openForm()
     }
 
-    delete(id) {
-        this.patientService.delete(id)
-        .then(() => {
-            this.updateList()
+    async delete(index) {
+
+        try {
+            let aux = this.state.patient?.medication
+            aux.splice(index, 1)
+
+            await this.setState({medications: [...aux]})
+            await this.setState({patient: {...this.state.patient, medication: [...this.state.medications]}})
+                                    
+            await this.patientService.update({...this.state.patient}, this.state.patient?._id)
             notification.successDelete()
-        })
-        .catch(()=> {
+        } catch(e) {
             notification.errorDelete()
-        })
-        this.updateList()
+            this.updateList()
+        }
     }
 
     openForm() {
         this.setState({openForm: !this.state.openForm})
     }
 
-    updateList() {
+    async updateList() {
         console.log('this.state', this.props.location.state)
-        this.patientService.get(this.props.location.state?.patient?._id)
-        .then(resp => {
-            this.setState({patient: {...resp.patient}})
-            this.setState({medications: [...resp.patient?.medication]})
-            this.setState({withdrawal_history: [...resp.patient?.withdrawal_history]})
-        })
+        let resp = await this.patientService.get(this.props.location.state?.patient?._id)
+        await this.setState({patient: {...resp.patient}})
+        await this.setState({medications: [...resp.patient?.medication]})
     }
 
     updateField(event) {
@@ -209,10 +213,16 @@ class Patient extends Component {
         this.setState({patient})
     }
 
-    updateUserField(event) {
-        const user = {...this.state.user}
-        user[event.target.name] = event.target.value
-        this.setState({user})
+    updateMedicationField(event) {
+        const medication = {...this.state.medication}
+        medication[event.target.name] = event.target.value
+        this.setState({medication})
+    }
+
+    updateHistoryField(event) {
+        const history = {...this.state.history}
+        history[event.target.name] = event.target.value
+        this.setState({history})
     }
 
     cleanFields() {
@@ -263,14 +273,21 @@ class Patient extends Component {
 
     async search(field, element) {
         this.setState({search: element})        
-        this.setState({filteredPatient: [...this.state.patients.filter(x => x.user.name.toUpperCase().includes(element.toUpperCase()))]})
+        this.setState({filteredMedications: [...this.state.patients.filter(x => x.user.name.toUpperCase().includes(element.toUpperCase()))]})
     }
+
+    handleChange = (event) => {
+        this.setState({medicationId: event.target.value});
+        console.log(this.state.medicationId)
+    };
 
     closeForm() {
         this.setState({disableUser: false})
         this.cleanFields()
         this.openForm()
     }
+
+
 
     renderHeader() {
         return (
@@ -312,22 +329,27 @@ class Patient extends Component {
                                 <div className={'row'}>
                                     <div className={'col-12'}>
                                         <div className={'form-group d-flex justify-content-center'}>
-                                            <TextField 
-                                                className='col-6' 
-                                                id="standard-basic"
-                                                label="Nome"
-                                                name={'name'}
-                                                value={this.state.user.name} 
-                                                onChange={e => this.updateUserField(e)}
-                                                placeholder={'Digite o nome...'}/>
+                                        <Select
+                                            labelId="demo-simple-select-label"
+                                            id="demo-simple-select"
+                                            className='col-6' 
+                                            value={this.state.medicationId}
+                                            onChange={e => this.handleChange(e)}
+                                            placeholder={'Selecione o medicamento...'}
+                                            displayEmpty={true}
+                                            >
+                                            {
+                                                this.state.medicines.map(m => <MenuItem value={m._id}>{m.name}</MenuItem>)
+                                            }
+                                        </Select>
                                             <TextField 
                                                 className='col-6 ml-2' 
                                                 id="standard-basic"
-                                                label="Email"
-                                                name={'email'}
-                                                value={this.state.user.email} 
-                                                onChange={e => this.updateUserField(e)}
-                                                placeholder={'Digite o email...'}/>
+                                                label="Dose"
+                                                name={'dose'}
+                                                value={this.state.medication.dose} 
+                                                onChange={e => this.updateMedicationField(e)}
+                                                placeholder={'Digite a dose...'}/>
                                         </div>
                                     </div>
                                 </div>
@@ -337,19 +359,19 @@ class Patient extends Component {
                                             <TextField 
                                                 className='col-6' 
                                                 id="standard-basic"
-                                                label="Data de Nascimento"
-                                                name={'birth'}
-                                                value={this.state.patient.birth} 
-                                                onChange={e => this.updateField(e)}
-                                                placeholder={'Digite a data de nascimento...'}/>
+                                                label="Intervalo da medicação"
+                                                name={'break_schedule'}
+                                                value={this.state.medication.break_schedule} 
+                                                onChange={e => this.updateMedicationField(e)}
+                                                placeholder={'Digite o intervalo da medicação...'}/>
                                             <TextField 
                                                 className='col-6 ml-2' 
                                                 id="standard-basic"
-                                                label="CPF"
-                                                name={'cpf'}
-                                                value={this.state.user.cpf} 
-                                                onChange={e => this.updateUserField(e)}
-                                                placeholder={'Digite o CPF...'}/>
+                                                label="Modo de usar"
+                                                name={'instructions'}
+                                                value={this.state.medication.instructions} 
+                                                onChange={e => this.updateMedicationField(e)}
+                                                placeholder={'Digite o modo de usar...'}/>
                                         </div>
                                     </div>
                                 </div>
@@ -359,101 +381,19 @@ class Patient extends Component {
                                             <TextField 
                                                 className='col-6' 
                                                 id="standard-basic"
-                                                label="Telefone"
-                                                name={'phone_number'}
-                                                value={this.state.patient.phone_number} 
-                                                onChange={e => this.updateField(e)}
-                                                placeholder={'Digite o Telefone...'}/>
-                                            <TextField 
-                                                className='col-3 ml-2' 
-                                                id="standard-basic"
-                                                label="Idade"
-                                                name={'age'}
-                                                type="number"
-                                                value={this.state.patient.age} 
-                                                onChange={e => this.updateField(e)}
-                                                placeholder={'Digite o cargo ou função...'}/>
-                                            <TextField 
-                                                className='col-3 ml-2' 
-                                                id="standard-basic"
-                                                label="Peso (Kg)"
-                                                type="number"
-                                                name={'weight'}
-                                                value={this.state.patient.weight} 
-                                                onChange={e => this.updateField(e)}
-                                                placeholder={'Digite o cargo ou função...'}/>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="row pt-3 mb-2">
-                                    <div className="col-12">
-                                        <p className="lead mb-0">Endereço</p>
-                                        <hr className="my-0" />
-                                    </div>
-                                </div>
-                                <div className={'row'}>
-                                    <div className={'col-12'}>
-                                        <div className={'form-group d-flex justify-content-center'}>
-                                            <TextField 
-                                                className='col-6' 
-                                                id="standard-basic"
-                                                label="CEP"
-                                                name={'zipcode'}
-                                                value={this.state.address.zipcode} 
-                                                onChange={e => this.updateAddressField(e)}
-                                                placeholder={'Digite o nome...'}/>
+                                                label="Data de Retirada"
+                                                name={'pick_date'}
+                                                value={this.state.medication.pick_date} 
+                                                onChange={e => this.updateMedicationField(e)}
+                                                placeholder={'Digite a data de retirada...'}/>
                                             <TextField 
                                                 className='col-6 ml-2' 
                                                 id="standard-basic"
-                                                label="Logradouro"
-                                                name={'street'}
-                                                value={this.state.address.street} 
-                                                onChange={e => this.updateAddressField(e)}
-                                                placeholder={'Digite o email...'}/>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className={'row'}>
-                                    <div className={'col-12'}>
-                                        <div className={'form-group d-flex justify-content-center'}>
-                                            <TextField 
-                                                className='col-6' 
-                                                id="standard-basic"
-                                                label="Número"
-                                                name={'number'}
-                                                value={this.state.address.number} 
-                                                onChange={e => this.updateAddressField(e)}
-                                                placeholder={'Digite o nome...'}/>
-                                            <TextField 
-                                                className='col-6 ml-2' 
-                                                id="standard-basic"
-                                                label="Bairro"
-                                                name={'district'}
-                                                value={this.state.address.district} 
-                                                onChange={e => this.updateAddressField(e)}
-                                                placeholder={'Digite o email...'}/>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className={'row'}>
-                                    <div className={'col-12'}>
-                                        <div className={'form-group d-flex justify-content-center'}>
-                                            <TextField 
-                                                className='col-6' 
-                                                id="standard-basic"
-                                                label="Cidade"
-                                                name={'city'}
-                                                value={this.state.address.city} 
-                                                onChange={e => this.updateAddressField(e)}
-                                                placeholder={'Digite o nome...'}/>
-                                            <TextField 
-                                                className='col-6 ml-2' 
-                                                id="standard-basic"
-                                                label="Estado"
-                                                name={'state'}
-                                                value={this.state.address.state} 
-                                                onChange={e => this.updateAddressField(e)}
-                                                placeholder={'Digite o Estado...'}/>
+                                                label="Data da Próxima Retirada"
+                                                name={'schedule_date'}
+                                                value={this.state.medication.schedule_date} 
+                                                onChange={e => this.updateMedicationField(e)}
+                                                placeholder={'Digite a data da proxima retirada...'}/>
                                         </div>
                                     </div>
                                 </div>
@@ -478,8 +418,8 @@ class Patient extends Component {
     }
 
     render() {
-        let array = (this.state.filteredPatient.length === 0) && (this.state.search === '')? this.state.medications : this.state.filteredPatient
-        console.log('ahn', this.state.patient)
+        let array = (this.state.filteredMedications.length === 0) && (this.state.search === '')? this.state.medications : this.state.filteredMedications
+        console.log(array)
         return (
             <Main icon={"users"} title={`Pacientes`} subtitle={`Medicações do paciente ${this.state.patient?.user?.name}`}>
                 {this.renderHeader()}
@@ -499,7 +439,7 @@ class Patient extends Component {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {this.state.medications.slice(this.state.page * this.state.rowsPerPage, this.state.page * this.state.rowsPerPage + this.state.rowsPerPage).map((row) => {
+                            {this.state.medications.slice(this.state.page * this.state.rowsPerPage, this.state.page * this.state.rowsPerPage + this.state.rowsPerPage).map((row, i) => {
                             return (
                                 <TableRow hover role="checkbox" tabIndex={-1} key={row.code}>
                                 {columns.map((column) => {
@@ -509,10 +449,14 @@ class Patient extends Component {
                                         const separate = column.id.split('.')
 
                                         if(separate.length > 0) {
-                                            value = row[separate[0]][separate[1]]
+                                            // value = row[separate[0]][separate[1]]
                                             
-                                            if(separate[0] === 'withdrawal_history')    
-                                                value = 'N/D'
+                                            if(separate[0] === 'medication_id') {
+                                                this.state.medicines.map(m => {
+                                                    if(row.medication_id === m._id)
+                                                        value = m.name
+                                                })
+                                            }   
                                         }
                                     }
 
@@ -524,10 +468,10 @@ class Patient extends Component {
                                     <TableCell key={column.id} align={column.align} className={'big-string'} title={`${value}`}>
                                         {column.id === 'actions' ? 
                                         <div>
-                                            <button title={'Ver/Editar Paciente'} className={'btn btn-success ml-2'} onClick={() => this.update(row)}>
+                                            <button title={'Ver/Editar Paciente'} className={'btn btn-success ml-2'} onClick={() => this.update(row, i)}>
                                                 <i className={'fa fa-pencil'}></i>
                                             </button>
-                                            <button className={'btn btn-danger ml-2'} onClick={() => this.delete(row._id)}>
+                                            <button className={'btn btn-danger ml-2'} onClick={() => this.delete(i)}>
                                                 <i className={'fa fa-trash'}></i>
                                             </button>
                                             <button title={'Ver/Editar Medicamentos'} className={'btn btn-primary ml-2'} >
@@ -547,7 +491,7 @@ class Patient extends Component {
                     <TablePagination
                         rowsPerPageOptions={[10, 25, 50]}
                         component="div"
-                        count={this.state.patients.length}
+                        count={array.length}
                         rowsPerPage={this.state.rowsPerPage}
                         page={this.state.page}
                         onChangePage={(e, v) => this.handleChangePage(e, v)}
