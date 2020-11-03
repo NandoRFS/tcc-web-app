@@ -8,6 +8,7 @@ import Tip from "../components/tips/Tip";
 import Medicine from "../components/medicines/Medicine";
 import Login from "../components/login/Login"
 import Pharmacist from "../components/pharmacist/Pharmacist"
+import Profile from "../components/profile/Profile"
 
 import {isAuthenticated} from '../components/login/Logincontroller'
 
@@ -33,6 +34,7 @@ export default props => {
             <Route path={'/medicines'} component={Medicine} />
             <Route path={'/users'} component={Medicine} />
             <Route path={'/tips'} component={Tip} />
+            <Route path={'/profile'} component={Profile} />
             <Redirect from={'*'} to={'/'} />
         </Switch>
     )

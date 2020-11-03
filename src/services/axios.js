@@ -1,3 +1,4 @@
+import createBreakpoints from "@material-ui/core/styles/createBreakpoints";
 import axios from "axios";
 
 const baseUrl = process.env.REACT_APP_APIURL
@@ -97,6 +98,24 @@ export default class Axios {
         } catch(e) {
             this.authError(e)
             throw e
+        }
+    }
+
+    async resetPassword(body) {
+        try {
+            let resp = await axios['post'](`${baseUrl}/reset-password`, body)
+            return resp
+        } catch(e) {
+            throw e.response.data.error
+        }
+    }
+
+    async forgotPassword(body) {
+        try {
+            let resp = await axios['post'](`${baseUrl}/forgot-password`, body)
+            return resp
+        } catch(e) {
+            throw e.response.data.error
         }
     }
 }

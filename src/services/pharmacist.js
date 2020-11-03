@@ -3,6 +3,7 @@ import Axios from './axios'
 export default class Pharmacist {
   constructor() {
     this.axios = new Axios('/pharmacist')
+    this.axiosUser = new Axios('/pharmacist/user')
   }
 
   async save(body) {
@@ -15,6 +16,10 @@ export default class Pharmacist {
 
   async getAll() {
     return this.axios.get()
+  }
+
+  async getByUser(id) {
+    return this.axiosUser.getById(id)
   }
 
   async delete(id) {

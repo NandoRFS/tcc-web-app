@@ -17,8 +17,10 @@ export default props =>
             <Link to={"/tips"}>
                 <i className={"fa fa-lightbulb-o"}></i> Dicas/Sugestões
             </Link>
-            <Link to={"/pharmacists"}>
-                <i className={"fa fa-user-plus"}></i> Usuários
-            </Link>
+            {   JSON.parse(localStorage.getItem('user'))?.isAdmin &&
+                <Link to={"/pharmacists"}>
+                    <i className={"fa fa-user-plus"}></i> Usuários
+                </Link>
+            }
         </nav>
     </aside>

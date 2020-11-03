@@ -9,6 +9,14 @@ export default class User {
     return this.axios.post(body)
   }
 
+  async sendMail(body) {
+    return this.axios.forgotPassword(body)
+  }
+
+  async reset(body) {
+    return this.axios.resetPassword(body)
+  }
+
   async update(body, id) {
     return this.axios.update(body, id)
   }
