@@ -333,7 +333,7 @@ class Patient extends Component {
                                                 id="standard-basic"
                                                 label="CPF"
                                                 name={'cpf'}
-                                                value={this.state.user.cpf} 
+                                                value={this.state.user?.cpf} 
                                                 onChange={e => this.updateUserField(e)}
                                                 placeholder={'Digite o CPF...'}/>
                                         </div>
@@ -494,7 +494,8 @@ class Patient extends Component {
                                         const separate = column.id.split('.')
 
                                         if(separate.length > 0) {
-                                            value = row[separate[0]][separate[1]]
+                                            if(row[separate[0]])
+                                                value = row[separate[0]][separate[1]]
                                             
                                             // row[separate[0]][0][separate[1]] ver aqui
 
