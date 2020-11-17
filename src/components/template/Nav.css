@@ -1,5 +1,5 @@
 aside.menu-area {
-    background: #451246;
+    background: #89C5C6;
     box-shadow:
         2px 0 0 0 rgba(0, 0, 0, 0.12),
         2px 0 0 0 rgba(0, 0, 0, 0.09);
@@ -14,7 +14,7 @@ aside.menu-area {
 }
 
 .menu a:hover {
-    background: #331134;
+    background: #75a1a1;
 }
 
 @media(max-width: 768px) {

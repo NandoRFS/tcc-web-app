@@ -2,7 +2,7 @@ import './Login.css'
 import React, { Component } from "react"
 import {Button, TextField, Divider} from '@material-ui/core'
 import Notification from '../utils/notification'
-
+import logo from '../../assets/imgs/Logo.png'
 import Main from '../template/Main'
 
 import Auth from '../../services/auth'
@@ -130,8 +130,8 @@ class Tip extends Component {
                 
                 {   !this.state.forgotMenu && !this.state.newPass &&
                     <div>
-                    <div className={"d-flex justify-content-center title"}>
-                        LOGIN
+                    <div className={"d-flex justify-content-center"} style={{marginBottom: 12}}>
+                        <img src={logo} alt={"logo"} />
                     </div>
 
                     <div> 
@@ -170,9 +170,9 @@ class Tip extends Component {
                             </form>
                         
                             <div className={"d-flex justify-content-center mb-4 mt-2"}> 
-                                <button className={'btn btn-primary'}
+                                <button className={'btn'} style={{backgroundColor: '#89C5C6'}}
                                     onClick={e => this.login()}>
-                                    Entrar
+                                    <span style={{color: 'white'}}>Entrar</span>
                                 </button>
                             </div>
 
@@ -189,8 +189,12 @@ class Tip extends Component {
                 {/* FORGOT MENU */}
                 {   !!this.state.forgotMenu && !this.state.newPass &&
                     <div>
-                    <div className={"d-flex justify-content-center title"}>
-                        RUCUPERAÇÃO DE SENHA
+                    <div className={"d-flex justify-content-center"} style={{marginBottom: 20}}>
+                        <img src={logo} alt={"logo"} />
+                    </div>
+
+                    <div className={"d-flex justify-content-center"} style={{marginBottom: 20}}>
+                        <span>Digite a informação abaixo para seguir com a recuperação de sua senha.</span>
                     </div>
 
                     <div> 
@@ -212,9 +216,9 @@ class Tip extends Component {
                             </form>
                         
                             <div className={"d-flex justify-content-center mb-4 mt-2"}> 
-                                <button className={'btn btn-primary'}
+                                <button className={'btn'} style={{backgroundColor: '#89C5C6'}}
                                     onClick={e => this.sendMail()}>
-                                    Seguinte
+                                    <span style={{color: 'white'}}>Seguinte</span>
                                 </button>
                             </div>
 
@@ -226,8 +230,8 @@ class Tip extends Component {
                 {/* NEW PASS MENU */}
                 {   !!this.state.forgotMenu && !!this.state.newPass &&
                     <div>
-                    <div className={"d-flex justify-content-center title"}>
-                        NOVA SENHA
+                    <div className={"d-flex justify-content-center"} style={{marginBottom: 20}}>
+                        <img src={logo} alt={"logo"} />
                     </div>
 
                     <div> 
@@ -266,10 +270,10 @@ class Tip extends Component {
                                 </div>
                             </form>
                         
-                            <div className={"d-flex justify-content-center mb-4 mt-2"}> 
-                                <button className={'btn btn-primary'}
+                            <div className={"d-flex justify-content-center mb-4 mt-2"}>
+                                <button className={'btn'} style={{backgroundColor: '#89C5C6'}}
                                     onClick={e => this.changePasswordConfirm()}>
-                                    Seguinte
+                                    <span style={{color: 'white'}}>Seguinte</span>
                                 </button>
                             </div>
 
